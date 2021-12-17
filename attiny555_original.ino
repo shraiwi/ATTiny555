@@ -1,3 +1,5 @@
+// ATTiny555 Original Version!
+
 /*
  *  Pin # | 555 Pin | Type | Function
  * -------+---------+------+-------------------
