@@ -1,4 +1,4 @@
-// ATTiny555 Original Version!
+// ATTiny555 Flip Chip Version!
 
 /*
  *  Pin # | 555 Pin | Type | Function
