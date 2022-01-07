@@ -1,4 +1,5 @@
-//#define AT555_ORIGINAL // comment out to use the original layout
+//#define AT555_ORIGINAL // uncomment to use the original layout
+//#define AT555_DISABLE_OUT // uncomment to stop the ATTiny555 from controlling the output pin
 
 /*
  * you can define the trigger and threshold voltages if you want,
@@ -21,5 +22,5 @@ void loop() {
   // can YOUR 555 multiprocess?
   // i didn't think so.
 
-  // you can also read the OUTPUT pin value using the AT555_outPin macro.
+  // you can also read the OUTPUT pin value using the AT555_flipFlop macro.
 }

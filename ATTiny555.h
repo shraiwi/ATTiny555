@@ -5,6 +5,20 @@
 #define AT555_TRIGVAL (85) // reset the flip-flop at 85/255 vcc, which is 1/3 vcc
 #endif
 
+#define AT555_ADPS_1MHZ   ((0 << ADPS2) | (0 << ADPS1) | (0 << ADPS0))  // ADC prescaler of 2 (500kHz input clock @ 1MHz)
+#define AT555_ADPS_8MHZ   ((0 << ADPS2) | (1 << ADPS1) | (1 << ADPS0))  // ADC prescaler of 8 (1MHz input clock @ 8MHz)
+#define AT555_ADPS_16MHZ  ((1 << ADPS2) | (0 << ADPS1) | (0 << ADPS0))  // ADC prescaler of 16 (1MHz input clock @ 16MHz)
+
+#if (F_CPU == 1000000)
+#define AT555_ADPS AT555_ADPS_1MHZ
+#elif (F_CPU == 8000000)
+#define AT555_ADPS AT555_ADPS_8MHZ
+#elif (F_CPU == 16000000)
+#define AT555_ADPS AT555_ADPS_16MHZ
+#else
+#error "CPU frequency is not supported!"
+#endif
+
 // initializes the ATTiny555 functionality.
 void AT555_begin();
 
@@ -26,7 +40,10 @@ void AT555_begin();
 #endif
 
 // The value of the ATTiny555 output pin 
-#define AT555_outPin (PORTB & (1 << PB4))
+#define AT555_flipFlop (DDRB & (1 << DDB2))
+
+// The Arduino pin number of the output pin.
+#define AT555_OUTPIN (4)
 
 void AT555_begin() {
     cli();            // disable interrupts
@@ -44,9 +61,7 @@ void AT555_begin() {
         (1 << ADEN) |   // enable the adc
         (1 << ADSC) |   // start conversion immediately
         (1 << ADIE) |   // enable the adc conversion interrupt
-        (0 << ADPS2) |  // set prescaler to 2 (500kHz input clock @ 1MHz)
-        (0 << ADPS1) |
-        (0 << ADPS0);
+        AT555_ADPS;     // set prescaler
 
     // == init comparator ==
     // uses AIN0 (CTRL) and AIN1 (THRESH) as the + and - inputs respectively.
@@ -59,14 +74,18 @@ void AT555_begin() {
     sei();              	// enable interrupts
 
     // == init outputs ==
+#ifndef AT555_DISABLE_OUT
     DDRB = (1 << DDB4);   // set OUT to output
+#endif
     PORTB |= (1 << PB0);  // enable CTRL 35 KOhm pull-up
 }
 
 ISR(ANA_COMP_vect) {    // on the falling edge (meaning THRESH is now higher than CTRL)
     // reset the flip-flop
     DDRB |= (1 << DDB2);  // enable discharge (set DIS to gnd)
-    PORTB |= (1 << PB4);  // enable OUT
+#ifndef AT555_DISABLE_OUT
+    PORTB &= ~(1 << PB4); // disable OUT
+#endif
 }
 
 ISR(ADC_vect) { // on the adc read complete
@@ -75,7 +94,9 @@ ISR(ADC_vect) { // on the adc read complete
     if (ADCH < AT555_TRIGVAL) {        // if TRIG is less than AT555_TRIGVAL
         // set the flip-flop
         DDRB &= ~(1 << DDB2); // disable discharge (set DIS to hi-z)
-        PORTB &= ~(1 << PB4); // disable OUT
+#ifndef AT555_DISABLE_OUT
+        PORTB |= (1 << PB4);  // enable OUT
+#endif
     }
 }
 
@@ -96,7 +117,10 @@ ISR(ADC_vect) { // on the adc read complete
 #endif
 
 // The value of the ATTiny555 output pin 
-#define AT555_outPin (PORTB & (1 << PB3))
+#define AT555_flipFlop (DDRB & (1 << DDB1))
+
+// The Arduino pin number of the output pin.
+#define AT555_OUTPIN (3)
 
 void AT555_begin() {
     cli();            // disable interrupts
@@ -114,14 +138,14 @@ void AT555_begin() {
         (1 << ADEN) |   // enable the ADC
         (1 << ADSC) |   // start conversion immediately
         (1 << ADIE) |   // enable the adc conversion interrupt
-        (0 << ADPS2) |  // set prescaler to 2 (500kHz input clock @ 1MHz)
-        (0 << ADPS1) |
-        (0 << ADPS0);
+        AT555_ADPS;     // set prescaler
     
     sei();              	// enable interrupts
 
     // == init outputs ==
+#ifndef AT555_DISABLE_OUT
     DDRB = (1 << DDB3);   // set OUT to output
+#endif
 }
 
 ISR(ADC_vect) { // on the ADC read complete
@@ -143,15 +167,19 @@ ISR(ADC_vect) { // on the ADC read complete
     // because the MUX switches between ADC1 and ADC2 each measurement.
     if (ADMUX & (1 << MUX0)) {
         if (ADCH > AT555_THRESHVAL) { // if THRESH is greater than AT555_THRESHVAL,
-        // reset the flip-flop
-        DDRB |= (1 << DDB1);  // enable discharge (set DIS to gnd)
-        PORTB |= (1 << PB3);  // enable OUT
+            // reset the flip-flop
+            DDRB |= (1 << DDB1);  // enable discharge (set DIS to gnd)
+#ifndef AT555_DISABLE_OUT
+            PORTB &= ~(1 << PB3); // disable OUT
+#endif
         }
     } else {
         if (ADCH < AT555_TRIGVAL) {        // if TRIG is less than AT555_TRIGVAL
-        // set the flip-flop
-        DDRB &= ~(1 << DDB1); // disable discharge (set DIS to hi-z)
-        PORTB &= ~(1 << PB3); // disable OUT
+            // set the flip-flop
+            DDRB &= ~(1 << DDB1); // disable discharge (set DIS to hi-z)
+#ifndef AT555_DISABLE_OUT
+            PORTB |= (1 << PB3);  // enable OUT
+#endif
         }
     }
 }
