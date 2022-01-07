@@ -18,8 +18,7 @@ void loop() {
   if (ADCH >= AT555_TRIGVAL && ADCH <= AT555_THRESHVAL) {
 
     // get how far the analog voltage is between 1/3 vcc and 2/3 vcc
-    uint8_t progress = ADCH - AT555_TRIGVAL; 
-    progress = (progress << 2) - progress; // multiply by 3
+    uint8_t progress = (ADCH - AT555_TRIGVAL) * 3; 
 
     // find how many leds we need to light to represent the voltage
     uint8_t ledsLit = ((uint16_t)progress * NUM_LEDS) >> 8;
